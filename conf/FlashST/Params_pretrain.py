@@ -5,10 +5,10 @@ import configparser
 
 def parse_args(device):
     # parser
-    args = argparse.ArgumentParser(prefix_chars='-', description='pretrain_arguments')
-    args_get, _ = args.parse_known_args()
+    # args = argparse.ArgumentParser(prefix_chars='-', description='pretrain_arguments')
+    # args_get, _ = args.parse_known_args()
     # get configuration
-    config_file = '../conf/FlashST/config.conf'
+    config_file = './config.conf'
     config = configparser.ConfigParser()
     config.read(config_file)
 
@@ -20,7 +20,8 @@ def parse_args(device):
     args.add_argument('-mode', default='ori', type=str, required=True)
     args.add_argument('-model', default='STGCN', type=str)
     args.add_argument('-dataset_test', default='PEMS07M', type=str)
-    args.add_argument('-dataset_use', default=config['data']['dataset_use'].split(','))
+    # args.add_argument('-dataset_use', default=config['data']['dataset_use'].split(',')[0])
+    args.add_argument('-dataset_use', default='PEMS08', type=str)
 
     # data
     args.add_argument('-his', default=config['data']['his'], type=int)

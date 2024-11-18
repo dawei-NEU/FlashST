@@ -63,8 +63,8 @@ class Trainer(object):
         for epoch in tqdm(range(self.args.pretrain_epochs)):
             start_time = time.time()
             spt_task_x, spt_task_y, select_dataset, train_len = get_pretrain_task_batch(self.args, self.x_trn_dict, self.y_trn_dict)
-            print(select_dataset)
-            loss, loss_pred, loss_ssl = self.train_pretrain_eps(spt_task_x, spt_task_y, select_dataset, train_len, epoch)
+            # print("trainning_input_batch_shape: {}, label_batch_shape: {}, total_num_batches: {}, the selected dataset: {}".format(spt_task_x[0].shape, spt_task_y[0].shape, train_len, select_dataset))
+            loss, loss_pred, loss_ssl = self.train_pretrain_eps(spt_task_x, spt_task_y, select_dataset, train_len, epoch) 
             end_time = time.time()
             if epoch % 1 == 0:
                 print(
@@ -83,9 +83,9 @@ class Trainer(object):
         lpls = self.lpls_dict[select_dataset]
 
         for i in range(train_len):
-            x_in, y_in, y_lbl = spt_task_x[i], spt_task_y[i], spt_task_y[i][..., 0:1]
+            x_in, y_in, y_lbl = spt_task_x[i], spt_task_y[i], spt_task_y[i][..., 0:1] # put every batch into model
             x_in, y_in, y_lbl = x_in.to(self.args.device), y_in.to(self.args.device), y_lbl.to(self.args.device)
-            out, q = self.model(x_in, x_in, select_dataset, batch_seen=None, nadj=nadj, lpls=lpls, useGNN=True)
+            out, q = self.model(x_in, x_in, select_dataset, batch_seen=None, nadj=nadj, lpls=lpls, useGNN=True) # x_predic, x_prompt_return
             loss_pred, _ = self.loss(out, y_lbl, self.scaler_dict[select_dataset])
             loss_ssl = self.loss_ssl(q, q)
             loss = loss_pred + loss_ssl
@@ -171,6 +171,7 @@ class Trainer(object):
         total_loss = 0
         nadj = self.A_dict[self.args.dataset_test]
         lpls = self.lpls_dict[self.args.dataset_test]
+        # in the fine-tuning stage, train the pretrained model again by B dataset at relatively less epoch
         for batch_idx, (data, target) in enumerate(self.eval_train_loader):
             self.batch_seen += 1
             data = data.to(self.args.device)
@@ -204,6 +205,7 @@ class Trainer(object):
         total_val_loss = 0
         nadj = self.A_dict[self.args.dataset_test]
         lpls = self.lpls_dict[self.args.dataset_test]
+        # in the fine-tuning stage, evaluate the retrained model performance by part of B dataset
         with torch.no_grad():
             for batch_idx, (data, target) in enumerate(self.eval_val_loader):
                 data = data.to(self.args.device)

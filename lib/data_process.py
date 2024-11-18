@@ -4,35 +4,36 @@ import random
 import os
 from torch.utils.data import Dataset
 
+# change the dataset index to day loop or week loop
 def time_add(data, week_start, interval=5, weekday_only=False, holiday_list=None, day_start=0, hour_of_day=24):
     # day and week
     if weekday_only:
         week_max = 5
     else:
         week_max = 7
-    time_slot = hour_of_day * 60 // interval
-    day_data = np.zeros_like(data)
+    time_slot = hour_of_day * 60 // interval # to get how many time slots a day has, each hour has 60 minutes, a interval is 5 minutes
+    day_data = np.zeros_like(data) # the first dimension represents all time slots, the second is all mornitoring points
     week_data = np.zeros_like(data)
     holiday_data = np.zeros_like(data)
-    day_init = day_start
-    week_init = week_start
+    day_init = day_start # take a day as loop
+    week_init = week_start # take a week as a loop
     holiday_init = 1
     for index in range(data.shape[0]):
-        if (index) % time_slot == 0:
+        if (index) % time_slot == 0: # if the time slot index can be divided by time_slot a day, it means a new day come
             day_init = day_start
-        day_init = day_init + 1 * (interval // 5)
+        day_init = day_init + 1 * (interval // 5) # as the index increases, the day_init increases as well untill a new day come
         if (index) % time_slot == 0 and index !=0:
             week_init = week_init + 1
         if week_init > week_max:
             week_init = 1
-        if day_init < 6:
+        if day_init < 6: 
             holiday_init = 1
         else:
             holiday_init = 2
 
         day_data[index:index + 1, :] = day_init
         week_data[index:index + 1, :] = week_init
-        holiday_data[index:index + 1, :] = holiday_init
+        holiday_data[index:index + 1, :] = holiday_init # holiday_data list only has number 1 and 2 
 
     if holiday_list is None:
         k = 1
@@ -66,7 +67,7 @@ def load_st_dataset(dataset, args):
     #output B, N, D
     # 1 / 1 / 2018 - 2 / 28 / 2018 Monday
     if dataset == 'PEMS04':
-        data_path = os.path.join('../data/PEMS04/PEMS04.npz')
+        data_path = os.path.join('./data/PEMS04/PEMS04.npz')
         data = np.load(data_path)['data'][:, :, 0]  # onley the first dimension, traffic flow data
         print(data.shape, data[data==0].shape)
         week_start = 1
@@ -79,7 +80,7 @@ def load_st_dataset(dataset, args):
 
     # 7 / 1 / 2016 - 8 / 31 / 2016 Friday
     elif dataset == 'PEMS08':
-        data_path = os.path.join('../data/PEMS08/PEMS08.npz')
+        data_path = os.path.join('./data/PEMS08/PEMS08.npz')
         data = np.load(data_path)['data'][:, :, 0]  # only the first dimension, traffic flow data
         print(data.shape, data[data==0].shape)
         week_start = 5
@@ -92,7 +93,7 @@ def load_st_dataset(dataset, args):
 
     #   9/1/2018 - 11/30/2018 Saturday
     elif dataset == 'PEMS03':
-        data_path = os.path.join('../data/PEMS03/PEMS03.npz')
+        data_path = os.path.join('./data/PEMS03/PEMS03.npz')
         data = np.load(data_path)['data'][:, :, 0]  #onley the first dimension, traffic flow data
         week_start = 6
         interval = 5
@@ -104,7 +105,7 @@ def load_st_dataset(dataset, args):
 
     # 5 / 1 / 2017 - 8 / 31 / 2017 Monday
     elif dataset == 'PEMS07':
-        data_path = os.path.join('../data/PEMS07/PEMS07.npz')
+        data_path = os.path.join('./data/PEMS07/PEMS07.npz')
         data = np.load(data_path)['data'][:, :, 0]  # only the first dimension, traffic flow data
         week_start = 1
         interval = 5
@@ -116,7 +117,7 @@ def load_st_dataset(dataset, args):
 
     # 1 / 1 / 2017 - 2 / 28 / 2017 Sunday
     elif dataset == 'CA_District5':
-        data_path = os.path.join('../data/CA_District5/CA_District5.npz')
+        data_path = os.path.join('./data/CA_District5/CA_District5.npz')
         data = np.load(data_path)['data'][:, :]  # only the first dimension, traffic flow data
         week_start = 7
         interval = 5
@@ -128,7 +129,7 @@ def load_st_dataset(dataset, args):
 
     # 1 / 1 / 2018 - 4 / 30 / 2018 Monday
     elif dataset == 'chengdu_didi':
-        data_path = os.path.join('../data/chengdu_didi/chengdu_didi.npz')
+        data_path = os.path.join('./data/chengdu_didi/chengdu_didi.npz')
         data = np.load(data_path)['data'][:, :, 0]  # only the first dimension, traffic index
         print(data.shape, data[data==0].shape)
 
@@ -142,7 +143,7 @@ def load_st_dataset(dataset, args):
 
     # 5 / 1 / 2012 - 6 / 30 / 2012 Tuesday
     elif dataset == 'PEMS07M':
-        data_path = os.path.join('../data/PEMS07M/PEMS07M.npz')
+        data_path = os.path.join('./data/PEMS07M/PEMS07M.npz')
         data = np.load(data_path)['data']  # only traffic speed data
         week_start = 2
         weekday_only = True
@@ -154,7 +155,7 @@ def load_st_dataset(dataset, args):
         day_data, week_data, holiday_data = time_add(data, week_start, interval, weekday_only, holiday_list=holiday_list)
 
     elif dataset == 'NYC_BIKE':
-        data_path = os.path.join('../data/NYC_BIKE/NYC_BIKE.npz')
+        data_path = os.path.join('./data/NYC_BIKE/NYC_BIKE.npz')
         data = np.load(data_path)['data'][..., 0].astype(np.float64)
         print(data.dtype,)
         week_start = 5
@@ -169,18 +170,18 @@ def load_st_dataset(dataset, args):
     else:
         raise ValueError
 
-    args.num_nodes = data.shape[1]
+    args.num_nodes = data.shape[1] # total number of data mornitoring point
 
     if len(data.shape) == 2:
-        data = np.expand_dims(data, axis=-1)
+        data = np.expand_dims(data, axis=-1) # add a dimension at the end of the shape, like change (10,10) to (10,10,1)
         day_data = np.expand_dims(day_data, axis=-1).astype(int)
         week_data = np.expand_dims(week_data, axis=-1).astype(int)
         # holiday_data = np.expand_dims(holiday_data, axis=-1).astype(int)
         data = np.concatenate([data, day_data, week_data], axis=-1)
-    elif len(data.shape) > 2:
+    elif len(data.shape) > 2: # the data shape is only 2 or 3
         day_data = np.expand_dims(day_data, axis=-1).astype(int)
         week_data = np.expand_dims(week_data, axis=-1).astype(int)
-        data = np.concatenate([data, day_data, week_data], axis=-1)
+        data = np.concatenate([data, day_data, week_data], axis=-1) # concate the data along the last dimention, like concate two (10,10,1) tensor to (10, 10, 2)
     else:
         raise ValueError
 
@@ -188,6 +189,7 @@ def load_st_dataset(dataset, args):
           data[..., 0:1].mean(), np.median(data[..., 0:1]), data.dtype)
     return data
 
+# split the input dataset as three parts, train 60%, eval 20%, test 20%
 def split_data_by_ratio(data, val_ratio, test_ratio):
     data_len = data.shape[0]
     test_data = data[-int(data_len*test_ratio):]
@@ -195,6 +197,7 @@ def split_data_by_ratio(data, val_ratio, test_ratio):
     train_data = data[:-int(data_len*(test_ratio+val_ratio))]
     return train_data, val_data, test_data
 
+# split data into many chunks, chunks size is window and horizon
 def Add_Window_Horizon(data, window=3, horizon=1, single=False):
     '''
     :param data: shape [B, ...]
@@ -207,15 +210,15 @@ def Add_Window_Horizon(data, window=3, horizon=1, single=False):
     X = []      #windows
     Y = []      #horizon
     index = 0
-    if single:
+    if single: 
         while index < end_index:
-            X.append(data[index:index+window])
-            Y.append(data[index+window+horizon-1:index+window+horizon])
+            X.append(data[index:index+window]) # set the history time sequence for training input which has the length of window
+            Y.append(data[index+window+horizon-1:index+window+horizon]) # single means set the last time slot as the true label
             index = index + 1
     else:
         while index < end_index:
             X.append(data[index:index+window])
-            Y.append(data[index+window:index+window+horizon])
+            Y.append(data[index+window:index+window+horizon]) # set the next time sequence as true label which has the length of horizon
             index = index + 1
     X = np.array(X)
     Y = np.array(Y)
@@ -239,6 +242,7 @@ class StandardScaler:
             self.mean = torch.from_numpy(self.mean).to(data.device).type(data.dtype)
         return (data * self.std) + self.mean
 
+# normalize the original data, day data and week date respectively
 def normalize_dataset(data, data_type, input_base_dim, normalize_type="meanstd"):
     if normalize_type == 'maxmin':
         data_ori = data[:, :, 0:input_base_dim]
@@ -292,15 +296,19 @@ def define_dataloder(stage, args):
     for dataset_name in data_inlist:
         print(data_inlist, dataset_name, args.val_ratio, args.test_ratio)
         # print(sss)
-        data = load_st_dataset(dataset_name, args)
+        data = load_st_dataset(dataset_name, args) # load original data and concate the day loop and week loop index
         data_train, data_val, data_test = split_data_by_ratio(data, args.val_ratio, args.test_ratio)
 
         scaler_data, scaler_day, scaler_week, scaler_holiday = normalize_dataset(data_train, args.data_type, args.input_base_dim)
         print(data_train.shape, scaler_data.mean, scaler_data.std)
+        
+        # split data into many chunks along the time slot dimention, (T, R) -> (T, history, R) as X and (T, R) -> (T, pred, R) as Y
+        # it means assign t+his as training input, t+pred as label
         x_tra, y_tra = Add_Window_Horizon(data_train, args.his, args.pred)
         x_val, y_val = Add_Window_Horizon(data_val, args.his, args.pred)
         x_test, y_test = Add_Window_Horizon(data_test, args.his, args.pred)
 
+        # normalize the input data by the mean and std of original splitted train data
         if args.real_value == False:
             x_tra[..., :args.input_base_dim] = scaler_data.transform(x_tra[:, :, :, :args.input_base_dim])
             y_tra[..., :args.input_base_dim] = scaler_data.transform(y_tra[:, :, :, :args.input_base_dim])
@@ -312,6 +320,7 @@ def define_dataloder(stage, args):
         x_val, y_val = torch.FloatTensor(x_val), torch.FloatTensor(y_val)
         x_test, y_test = torch.FloatTensor(x_test), torch.FloatTensor(y_test)
 
+        # save the transformed data into dictionary, the key is their dataset's name
         x_trn_dict[dataset_name], y_trn_dict[dataset_name] = x_tra, y_tra
         x_val_dict[dataset_name], y_val_dict[dataset_name] = x_val, y_val
         x_tst_dict[dataset_name], y_tst_dict[dataset_name] = x_test, y_test
@@ -321,20 +330,21 @@ def define_dataloder(stage, args):
 
 def get_pretrain_task_batch(args, x_list, y_list):
 
-    select_dataset = random.choice(args.dataset_use)
+    select_dataset = random.choice(args.dataset_use) # randomly select a dataset to train from the 4 datasets
     print(args.dataset_use, select_dataset)
     batch_size = args.batch_size
-    len_dataset = x_list[select_dataset].shape[0]
+    len_dataset = x_list[select_dataset].shape[0] # number of time slots
 
     batch_list_x = []
     batch_list_y = []
     permutation = np.random.permutation(len_dataset)
-    for index in range(0, len_dataset, batch_size):
+    for index in range(0, len_dataset, batch_size): # start, stop, step
         start = index
         end = min(index + batch_size, len_dataset)
         indices = permutation[start:end]
         x_data = x_list[select_dataset][indices.copy()]
         y_data = y_list[select_dataset][indices.copy()]
+        # split the data into many batches
         batch_list_x.append(x_data)
         batch_list_y.append(y_data)
     train_len = len(batch_list_x)

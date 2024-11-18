@@ -2,6 +2,8 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+# get the prompt by PromptNet from input training data, then put the input prompt into different model, get the y predict
+
 class FlashST(nn.Module):
     def __init__(self, args):
         super(FlashST, self).__init__()
@@ -141,14 +143,17 @@ class FlashST(nn.Module):
                     nn.init.uniform_(p)
 
         if self.mode != 'ori':
-            from PromptNet import PromptNet
+            from model.PromptNet import PromptNet
             self.pretrain_model = PromptNet(args)
 
 
     def forward(self, source, label, select_dataset, batch_seen=None, nadj=None, lpls=None, useGNN=False):
         if self.mode == 'ori':
+            # do predicting by the original model directly
             return self.forward_ori(source, label, select_dataset, batch_seen)
         else:
+            # pretrain by PromptNet first, get the pretrain prompt, 
+            # then put the prompt into original model, compare their difference between the two results with/out prompt
             return self.forward_pretrain(source, label, select_dataset, batch_seen, nadj, lpls, useGNN)
 
     def forward_pretrain(self, source, label, select_dataset, batch_seen=None, nadj=None, lpls=None, useGNN=False):

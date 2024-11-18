@@ -10,26 +10,27 @@ def pre_graph_dict(args):
     A_dict = {}
     lap_dict = {}
     node_dict = {}
-    node_dict['PEMS08'], node_dict['PEMS07'], node_dict['PEMS04'], node_dict['PEMS03'] = 170, 883, 307, 358
+    node_dict['PEMS08'], node_dict['PEMS07'], node_dict['PEMS04'], node_dict['PEMS03'] = 170, 883, 307, 358 # num of regions in each dataset, every region is a node in graph
     for data_graph in args.dataset_graph:
         if data_graph == 'PEMS08' or data_graph == 'PEMS04' or data_graph == 'PEMS07':
-            A, Distance = get_adjacency_matrix(distance_df_filename='../data/' + data_graph + '/' + data_graph + '.csv',
+            A, Distance = get_adjacency_matrix(distance_df_filename = './data/' + data_graph + '/' + data_graph + '.csv',
                                                num_of_vertices=node_dict[data_graph])
         elif data_graph == 'PEMS03':
             A, Distance = get_adjacency_matrix(
-                distance_df_filename='../data/' + data_graph + '/' + data_graph + '.csv',
-                num_of_vertices=node_dict[data_graph], id_filename='../data/' + data_graph + '/' + data_graph + '.txt')
+                distance_df_filename='./data/' + data_graph + '/' + data_graph + '.csv',
+                num_of_vertices=node_dict[data_graph], id_filename='./data/' + data_graph + '/' + data_graph + '.txt')
         elif data_graph == 'PEMS07M':
-            A = weight_matrix('../data/' + data_graph + '/' + data_graph + '.csv').astype(np.float32)
+            A = weight_matrix('./data/' + data_graph + '/' + data_graph + '.csv').astype(np.float32)
             A = A + np.eye(A.shape[0])
         elif data_graph == 'NYC_BIKE':
-            A = pd.read_csv('../data/' + data_graph + '/' + data_graph + '.csv', header=None).values.astype(np.float32)
+            A = pd.read_csv('./data/' + data_graph + '/' + data_graph + '.csv', header=None).values.astype(np.float32)
         elif data_graph == 'chengdu_didi':
-            A = np.load('../data/' + data_graph + '/' + 'matrix.npy').astype(np.float32)
+            A = np.load('./data/' + data_graph + '/' + 'matrix.npy').astype(np.float32)
         elif data_graph == 'CA_District5':
-            A = np.load('../data/' + data_graph + '/' + data_graph + '.npy').astype(np.float32)
+            A = np.load('./data/' + data_graph + '/' + data_graph + '.npy').astype(np.float32)
         else:
-            sensor_ids, sensor_id_to_ind, A = load_pickle(pickle_file='./data/' + data_graph + '/' + 'adj_mx.pkl')
+            sensor_ids, sensor_id_to_ind, A = load_pickle(pickle_file='../data/' + data_graph + '/' + 'adj_mx.pkl')
+        # calculate the most 32 important eigvectors in normalized laplacian transform of adjacent matrix
         lpls = cal_lape(A.copy())
         lpls = torch.FloatTensor(lpls).to(args.device)
         if not args.use_lpls:
@@ -39,15 +40,15 @@ def pre_graph_dict(args):
         A_dict_np[data_graph] = A
         A = torch.FloatTensor(A).to(args.device)
         A_dict[data_graph] = A
-    args.A_dict_np = A_dict_np
-    args.A_dict = A_dict
-    args.lpls_dict = lap_dict
+    args.A_dict_np = A_dict_np # normalized adjacent matrix
+    args.A_dict = A_dict # float tensor format of above normalized adjacent matrix
+    args.lpls_dict = lap_dict # the most 32 important eigvectors in normalized laplacian transform of adjacent matrix
 
 def get_adjacency_matrix(distance_df_filename, num_of_vertices, id_filename=None):
     '''
     Parameters
     ----------
-    distance_df_filename: str, path of the csv file contains edges information
+    distance_df_filename: str, the csv file of path that contains edges information
 
     num_of_vertices: int, the number of vertices
 
@@ -66,9 +67,10 @@ def get_adjacency_matrix(distance_df_filename, num_of_vertices, id_filename=None
 
         import csv
 
+        # the adjacent matrix A, its shape is (num_nodes, num_nodes), if the two nodes have edge, the corresponding entry is 1, otherwise 0
         A = np.zeros((int(num_of_vertices), int(num_of_vertices)),
                      dtype=np.float32)
-
+        # the distance matrix records the weight of edges between two nodes
         distaneA = np.zeros((int(num_of_vertices), int(num_of_vertices)),
                             dtype=np.float32)
 
@@ -89,16 +91,15 @@ def get_adjacency_matrix(distance_df_filename, num_of_vertices, id_filename=None
             return A, distaneA
 
         else:
-
             with open(distance_df_filename, 'r') as f:
-                f.readline()
+                f.readline() # each line includes the start node, the target node and distance between the two nodes
                 reader = csv.reader(f)
                 for row in reader:
                     if len(row) != 3:
                         continue
                     i, j, distance = int(row[0]), int(row[1]), float(row[2])
-                    A[i, j] = 1
-                    distaneA[i, j] = distance
+                    A[i, j] = 1 # in tha adjacent matrix, if the two nodes have edge, the corresponding entry is 1, otherwise 0
+                    distaneA[i, j] = distance # the distance matrix records the weight of edges
             return A, distaneA
 
 def load_pickle(pickle_file):
@@ -232,22 +233,24 @@ def constructGraph(row, col):
 
 
 def calculate_normalized_laplacian(adj):
-    adj = sp.coo_matrix(adj)
-    d = np.array(adj.sum(1))
-    isolated_point_num = np.sum(np.where(d, 0, 1))
+    adj = sp.coo_matrix(adj) # save the sparse adjacent matrix as coordinate matrix (i, j, value)
+    d = np.array(adj.sum(1)) # degree matrix
+    isolated_point_num = np.sum(np.where(d, 0, 1)) # the isolateed point means this poins has no edges with any other point, its degree is 0
     print(f"Number of isolated points: {isolated_point_num}")
-    d_inv_sqrt = np.power(d, -0.5).flatten()
+    d_inv_sqrt = np.power(d, -0.5).flatten() # 1/sqrt(D)
     d_inv_sqrt[np.isinf(d_inv_sqrt)] = 0.
     d_mat_inv_sqrt = sp.diags(d_inv_sqrt)
     normalized_laplacian = sp.eye(adj.shape[0]) - adj.dot(d_mat_inv_sqrt).transpose().dot(d_mat_inv_sqrt).tocoo()
     return normalized_laplacian, isolated_point_num
 
-def cal_lape(adj_mx):
+def cal_lape(adj_mx): # calculate the laplacian transform of adjacent matrix
     lape_dim = 32
-    L, isolated_point_num = calculate_normalized_laplacian(adj_mx)
-    EigVal, EigVec = np.linalg.eig(L.toarray())
-    idx = EigVal.argsort()
-    EigVal, EigVec = EigVal[idx], np.real(EigVec[:, idx])
-
+    # L is the normalized laplacian tranform of adjacent matrix, used to multiply the feature matrix of this graph
+    L, isolated_point_num = calculate_normalized_laplacian(adj_mx) 
+    EigVal, EigVec = np.linalg.eig(L.toarray()) 
+    idx = EigVal.argsort() # retrun the index of eigvalue ranking from low to high
+    # this step is to rank the eigvalue and the eigvector
+    EigVal, EigVec = EigVal[idx], np.real(EigVec[:, idx]) # the idx columns is the eigvector corresponding the eigvalues
+    # because the eigvectors has been ranked from low to high, this step is to get rid of the lowest isolated_point_num eigvectors
     laplacian_pe = EigVec[:, isolated_point_num + 1: lape_dim + isolated_point_num + 1]
-    return laplacian_pe
+    return laplacian_pe # (:, 32)

@@ -52,7 +52,7 @@ def cheb_poly_approx(L, Ks, n):
 
 def parse_args(DATASET, args_base):
     # get configuration
-    config_file = '../conf/STGCN/{}.conf'.format(DATASET)
+    config_file = './conf/STGCN/{}.conf'.format(DATASET)
     config = configparser.ConfigParser()
     config.read(config_file)
     parser = argparse.ArgumentParser(prefix_chars='--', description='predictor_based_arguments')
